@@ -1,0 +1,160 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Boleta en Wix</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
+    }
+    .boleta {
+      width: 750px;
+      background: #fff;
+      border: 2px solid #000;
+      padding: 20px;
+      margin: 30px auto;
+    }
+    .encabezado {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid black;
+      padding-bottom: 10px;
+    }
+    .encabezado img {
+      height: 50px;
+    }
+    .titulo {
+      text-align: center;
+      margin: 20px 0;
+      font-size: 22px;
+      font-weight: bold;
+      border: 2px solid black;
+      padding: 10px;
+      background-color: #eaeaea;
+    }
+    .cuadro {
+      border: 1px solid #000;
+      padding: 10px;
+      margin-bottom: 15px;
+    }
+    .campo {
+      font-weight: bold;
+    }
+    .importe-total {
+      border: 2px solid #000;
+      text-align: right;
+      font-size: 18px;
+      padding: 10px;
+      font-weight: bold;
+      margin-top: 20px;
+    }
+    #descargar {
+      display: block;
+      margin: 30px auto;
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+</head>
+<body>
+  <div class="boleta" id="boleta">
+    <div class="encabezado">
+      <img src="https://pagalo.pe/imagenes/new/logo-pagalo.svg" alt="Logo Pagalo.pe">
+      <div>
+        <div><strong>NRO. BOLETA:</strong> <span id="codigo"></span></div>
+        <div><strong>FECHA DE OPERACIÓN:</strong> <span id="fecha"></span></div>
+      </div>
+    </div>
+
+    <div class="titulo">BOLETA PARA ENTRADA A EVENTO</div>
+
+    <div class="cuadro">
+      <div class="campo">DATOS DE LA OPERACIÓN</div>
+      <div><strong>Entidad:</strong> EVENTO ACADÉMICO</div>
+      <div><strong>Concepto:</strong> Ingreso a charla profesional</div>
+    </div>
+
+    <div class="cuadro">
+      <div class="campo">DATOS DEL CONTRIBUYENTE</div>
+      <div><strong>Nombre completo:</strong> <span id="nombre"></span></div>
+      <div><strong>DNI o Documento:</strong> <span id="documento"></span></div>
+      <div><strong>Celular:</strong> <span id="celular"></span></div>
+      <div><strong>País y Provincia:</strong> <span id="pais"></span></div>
+    </div>
+
+    <div class="cuadro">
+      <div class="campo">OTROS DATOS</div>
+      <div><strong>Monto:</strong> S/ <span id="monto"></span></div>
+    </div>
+
+    <div class="importe-total">
+      IMPORTE TOTAL: S/ <span id="montoTotal"></span>
+    </div>
+  </div>
+
+  <button id="descargar">Descargar PDF</button>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const nombre = params.get("nombre") || "";
+    const documento = params.get("documento") || "";
+    const celular = params.get("celular") || "";
+    const pais = params.get("pais") || "";
+    const monto = params.get("monto") || "0.00";
+
+    function generarCodigoUnico(nombre, documento) {
+      const texto = nombre.trim().toLowerCase() + documento.trim();
+      let hash = 0;
+      for (let i = 0; i < texto.length; i++) {
+        hash = (hash << 5) - hash + texto.charCodeAt(i);
+        hash |= 0;
+      }
+      return "BOL-" + Math.abs(hash).toString().padStart(6, '0');
+    }
+
+    const nroBoleta = generarCodigoUnico(nombre, documento);
+
+    document.getElementById("nombre").textContent = nombre;
+    document.getElementById("documento").textContent = documento;
+    document.getElementById("celular").textContent = celular;
+    document.getElementById("pais").textContent = pais;
+    document.getElementById("monto").textContent = monto;
+    document.getElementById("montoTotal").textContent = monto;
+    document.getElementById("codigo").textContent = nroBoleta;
+
+    const fecha = new Date();
+    document.getElementById("fecha").textContent = fecha.toLocaleDateString("es-PE", {
+      day: "2-digit", month: "2-digit", year: "numeric"
+    });
+
+    fetch("https://script.google.com/macros/s/AKfycby-2j9j07D03xIZi-tRVlBYQQkJCHorKzpy71W32gA9pwYBwvpT1bto5o3MxQrbgCiz/exec", {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        nombre,
+        documento,
+        celular,
+        pais,
+        distrito: "",  // Puedes cambiar si usas provincia/distrito
+        monto,
+        fecha: new Date().toLocaleString(),
+        nroBoleta
+      })
+    });
+
+    document.getElementById("descargar").addEventListener("click", () => {
+      html2pdf().from(document.getElementById("boleta")).save(`Boleta-${nroBoleta}.pdf`);
+    });
+  </script>
+</body>
+</html>
